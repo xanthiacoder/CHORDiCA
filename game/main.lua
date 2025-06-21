@@ -122,7 +122,7 @@ A- = a- b- c  d- e- f  g
 
 ]]
 
-love.filesystem.setIdentity("TempoMapper") -- for R36S file system compatibility
+love.filesystem.setIdentity("CHORDiCA") -- for R36S file system compatibility
 love.mouse.setVisible( false ) -- make mouse cursor invis, use bitmap cursor
 love.graphics.setDefaultFilter("nearest", "nearest") -- for nearest neighbour, pixelart style
 
@@ -216,7 +216,7 @@ game.messageViewport = 1
 game.mode = "edit"
 
 -- set game scene
-game.scene = "TempoMapper" -- anything but "title" to prevent showing the title screens
+game.scene = "HorizonalKeyboard" -- anything but "title" to prevent showing the title screens
 
 -- set game script
 game.script = ""
@@ -362,7 +362,7 @@ end
 -- init music data table
 local music = {}
 
-music.recording = love.audio.newQueueableSource( 44100, 16, 1, 8 )
+-- music.recording = love.audio.newQueueableSource( 44100, 16, 1, 8 )
 
 music.recordingDevice = 0
 local devices = love.audio.getRecordingDevices()
@@ -459,10 +459,17 @@ function loadSong(fileName)
 
 end
 
--- hardcode music filename for testing
+-- hardcode music filename for testing (TempoMapper)
 music.filename = "samples/Sample_BeeMoved.ogg"
 loadSong(music.filename)
 
+
+-- init CHORDiCA variables
+local chordica = chordica or {}
+chordica.melody = {}
+chordica.harmony = {}
+chordica.bass = {}
+chordica.rhythm = {}
 
 -- alpha values to simulate fading
 local keyFinder = {}
@@ -583,24 +590,13 @@ end
 function love.load()
   -- Your game load here
 
-  game.message = "Tempo Mapper (Early Access) - press Enter to continue"
+  game.message = "CHORDiCA (Desktop Edition) - press Enter to continue"
 
-  -- piano
-  piano = {
-    [28] = love.audio.newSource("samples/piano28.ogg", "static"),
-	  [29] = love.audio.newSource("samples/piano29.ogg", "static"),
-	  [30] = love.audio.newSource("samples/piano30.ogg", "static"),
-	  [31] = love.audio.newSource("samples/piano31.ogg", "static"),
-	  [32] = love.audio.newSource("samples/piano32.ogg", "static"),
-	  [33] = love.audio.newSource("samples/piano33.ogg", "static"),
-	  [34] = love.audio.newSource("samples/piano34.ogg", "static"),
-	  [35] = love.audio.newSource("samples/piano35.ogg", "static"),
-	  [36] = love.audio.newSource("samples/piano36.ogg", "static"),
-	  [37] = love.audio.newSource("samples/piano37.ogg", "static"),
-	  [38] = love.audio.newSource("samples/piano38.ogg", "static"),
-	  [39] = love.audio.newSource("samples/piano39.ogg", "static"),
-	  [40] = love.audio.newSource("samples/piano40.ogg", "static"),
-  }
+  -- load origial CHORDiCA piano sounds
+  piano = {}
+  for i = 21,108 do
+    piano[i] = love.audio.newSource("res/piano/" .. i .. ".ogg", "static")
+  end
 
   -- fonts
   monoFont = love.graphics.newFont("fonts/"..FONT, FONT_SIZE)
@@ -620,6 +616,8 @@ function love.load()
   -- xtui screens using monoFont
   xtui = {}
   xtui["piano-13"] = json.decode(love.filesystem.read("xtui/0-piano-13keys.xtui"))
+  xtui["horizontalKeyboard"] = json.decode(love.filesystem.read("xtui/0-horizontalkeyboard.xtui"))
+
 
   -- [scene number][screen 1,screen 2,screen 1 bgcolor, screen 2 bgcolor]
   screen = {}
@@ -667,7 +665,6 @@ function drawXTUI16(xtui, x, y)
   end
 end
 
----comment
 ---@param msg string Text message to display
 ---@param viewport integer 1..4 to switch location of display output
 function drawMessage( msg, viewport)
@@ -857,6 +854,13 @@ function drawMenu()
 end
 
 
+function drawHorizonalKeyboard()
+  love.graphics.setFont(monoFont)
+  love.graphics.setColor(color.white)
+  love.graphics.print(xtui["horizontalKeyboard"], 0, 0)
+end
+
+
 function drawPiano13Keys(x,y)
   -- draw Piano 13 keys
   love.graphics.setFont(monoFont)
@@ -960,8 +964,8 @@ function love.draw()
   end
 
   -- draw pointer
---  love.graphics.setColor(color.white)
---  love.graphics.draw(pointer, love.mouse.getX(), love.mouse.getY())
+  love.graphics.setColor(color.white)
+  love.graphics.draw(pointer, love.mouse.getX(), love.mouse.getY())
 
   if game.scene == "title" then
     -- draw full screens last
@@ -976,83 +980,104 @@ function love.draw()
     love.graphics.print(screen[1][2],640,0) -- screen 2 foreground
   end
 
-	-- draw audio waveform
-  love.graphics.setColor(color.white)
-  love.graphics.draw(music.waveform, 0*FONT2X_WIDTH, 2*FONT2X_HEIGHT)
+  if game.scene == "TempoMapper" then
+    -- draw audio waveform
+    love.graphics.setColor(color.white)
+    love.graphics.draw(music.waveform, 0*FONT2X_WIDTH, 2*FONT2X_HEIGHT)
 
-  -- draw music playhead position
-  game.tooltip = "Filename: " .. music.filename .. "\n"
-  music.position = game.music:tell("seconds")
-	love.graphics.setColor( 1, 0, 0) -- set red color
-	love.graphics.line(0 + imageWidth*(music.position/music.duration) , 2*FONT2X_HEIGHT , 0 + imageWidth*(music.position/music.duration), (imageHeight+2*FONT2X_HEIGHT))
-	love.graphics.setColor( 1, 1, 1) -- reset to white
+    -- draw music playhead position
+    game.tooltip = "Filename: " .. music.filename .. "\n"
+    music.position = game.music:tell("seconds")
+	  love.graphics.setColor( 1, 0, 0) -- set red color
+	  love.graphics.line(0 + imageWidth*(music.position/music.duration) , 2*FONT2X_HEIGHT , 0 + imageWidth*(music.position/music.duration), (imageHeight+2*FONT2X_HEIGHT))
+	  love.graphics.setColor( 1, 1, 1) -- reset to white
 
-  -- visualising beats in a bar (needs tidying up)
-  love.graphics.setFont(monoFont)
-  love.graphics.setColor(color.brightcyan)
-  love.graphics.print(game.tooltip, 0, 16*FONT2X_HEIGHT )
-  love.graphics.print("Bars: " ..#music.bars, 0, 18*FONT2X_HEIGHT)
-  if #music.bars > 1 then
-    local durationBar  = music.bars[#music.bars] - music.bars[#music.bars-1]
-    local durationBeat = durationBar / 4 -- assuming 4 beats per bar
-    music.tempoCurrent = 60 / durationBeat -- 60 secs per min
-    music.tempoAverage = 60 / ((music.bars[#music.bars] - music.bars[1]) / ((#music.bars - 1) * 4))
-    love.graphics.print("Tempo: " .. math.floor(music.tempoAverage), 0, 20*FONT2X_HEIGHT)
-  end
-
-  -- draw bars
-  love.graphics.setColor(color.brightgreen)
-  love.graphics.setLineWidth(1)
-  for i = 1,#music.bars do
-		love.graphics.line(0 + imageWidth*(music.bars[i]/music.duration) , 0 , 0 + imageWidth*(music.bars[i]/music.duration), FONT2X_HEIGHT)
-  end
-  love.graphics.setColor(color.brightyellow)
-  for i = 1,#music.passage do
-    love.graphics.line(0 + imageWidth*(music.bars[music.passage[i]]/music.duration) , 0 , 0 + imageWidth*(music.bars[music.passage[i]]/music.duration), FONT_HEIGHT)
-  end
-
-  -- draw 1st bar, calculated bars based on average tempo
-  if music.barFirst ~= 0 then
-    love.graphics.setColor(color.brightyellow)
-    love.graphics.line(0 + imageWidth*(music.barFirst/music.duration) , 9*FONT2X_HEIGHT , 0 + imageWidth*(music.barFirst/music.duration), 10*FONT2X_HEIGHT)
-  end
-
-  local barsInSong = (math.floor((game.music:getDuration() - music.barFirst) / ((60/music.tempoAverage)*music.beatsPerBar)))
-  -- game.music:getDuration() - music.barFirst = (duration of song left to map)
-  -- duration of 1 bar = (60/music.tempoAverage)*music.beatsPerBar
-  -- number of bars in song = math.floor((game.music:getDuration() - music.barFirst) / ((60/music.tempoAverage)*music.beatsPerBar))
-
-  love.graphics.setColor(color.brightcyan) -- sets color for computed bar slices
-  if music.tempoAverage ~= 0 then
-    for i = 1, barsInSong do
-      love.graphics.line((imageWidth*(music.barFirst/music.duration))+(imageWidth*((i*(((60/music.tempoAverage)*music.beatsPerBar)/music.duration)))), 9*FONT2X_HEIGHT , (imageWidth*(music.barFirst/music.duration))+(imageWidth*((i*(((60/music.tempoAverage)*music.beatsPerBar)/music.duration)))), 10*FONT2X_HEIGHT)
+    -- visualising beats in a bar (needs tidying up)
+    love.graphics.setFont(monoFont)
+    love.graphics.setColor(color.brightcyan)
+    love.graphics.print(game.tooltip, 0, 16*FONT2X_HEIGHT )
+    love.graphics.print("Bars: " ..#music.bars, 0, 18*FONT2X_HEIGHT)
+    if #music.bars > 1 then
+      local durationBar  = music.bars[#music.bars] - music.bars[#music.bars-1]
+      local durationBeat = durationBar / 4 -- assuming 4 beats per bar
+      music.tempoCurrent = 60 / durationBeat -- 60 secs per min
+      music.tempoAverage = 60 / ((music.bars[#music.bars] - music.bars[1]) / ((#music.bars - 1) * 4))
+      love.graphics.print("Tempo: " .. math.floor(music.tempoAverage), 0, 20*FONT2X_HEIGHT)
     end
+
+    -- draw bars
+    love.graphics.setColor(color.brightgreen)
+    love.graphics.setLineWidth(1)
+    for i = 1,#music.bars do
+		  love.graphics.line(0 + imageWidth*(music.bars[i]/music.duration) , 0 , 0 + imageWidth*(music.bars[i]/music.duration), FONT2X_HEIGHT)
+    end
+    love.graphics.setColor(color.brightyellow)
+    for i = 1,#music.passage do
+      love.graphics.line(0 + imageWidth*(music.bars[music.passage[i]]/music.duration) , 0 , 0 + imageWidth*(music.bars[music.passage[i]]/music.duration), FONT_HEIGHT)
+    end
+
+    -- draw 1st bar, calculated bars based on average tempo
+    if music.barFirst ~= 0 then
+      love.graphics.setColor(color.brightyellow)
+      love.graphics.line(0 + imageWidth*(music.barFirst/music.duration) , 9*FONT2X_HEIGHT , 0 + imageWidth*(music.barFirst/music.duration), 10*FONT2X_HEIGHT)
+    end
+
+    local barsInSong = (math.floor((game.music:getDuration() - music.barFirst) / ((60/music.tempoAverage)*music.beatsPerBar)))
+    -- game.music:getDuration() - music.barFirst = (duration of song left to map)
+    -- duration of 1 bar = (60/music.tempoAverage)*music.beatsPerBar
+    -- number of bars in song = math.floor((game.music:getDuration() - music.barFirst) / ((60/music.tempoAverage)*music.beatsPerBar))
+
+    love.graphics.setColor(color.brightcyan) -- sets color for computed bar slices
+    if music.tempoAverage ~= 0 then
+      for i = 1, barsInSong do
+        love.graphics.line((imageWidth*(music.barFirst/music.duration))+(imageWidth*((i*(((60/music.tempoAverage)*music.beatsPerBar)/music.duration)))), 9*FONT2X_HEIGHT , (imageWidth*(music.barFirst/music.duration))+(imageWidth*((i*(((60/music.tempoAverage)*music.beatsPerBar)/music.duration)))), 10*FONT2X_HEIGHT)
+      end
+    end
+
+    -- draw beats per bar when music is playing, and there is an average tempo calculated (need patching)
+    --  if music.barTimeElapsed ~= 0 and music.tempoAverage ~= 0 then
+    --    if music.barTimeElapsed > 3*(60/music.tempoAverage) then
+    --      love.graphics.print(music.barTimeElapsed .. "\nCurrent beat in bar   : 1 ... 2 ... 3 ... 4 ...", 0, 12*FONT2X_HEIGHT)
+    --    elseif music.barTimeElapsed > 2*(60/music.tempoAverage) then
+    --      love.graphics.print(music.barTimeElapsed .. "\nCurrent beat in bar   : 1 ... 2 ... 3 ...", 0, 12*FONT2X_HEIGHT)
+    --    elseif music.barTimeElapsed > 1*(60/music.tempoAverage) then
+    --      love.graphics.print(music.barTimeElapsed .. "\nCurrent beat in bar   : 1 ... 2 ...", 0, 12*FONT2X_HEIGHT)
+    --    else
+    --      love.graphics.print(music.barTimeElapsed .. "\nCurrent beat in bar   : 1 ...", 0, 12*FONT2X_HEIGHT)
+    --    end
+    --  end
+
+    -- draw recording timer bar
+    if music.recordingDevice:isRecording() then
+      love.graphics.setColor(0,1,0,0.5)
+      love.graphics.setLineWidth(1)
+      if music.recordingTimer > 30 then
+        music.recordingTimer = 30
+      end
+      love.graphics.rectangle("fill",0,2*FONT2X_HEIGHT,640*(music.recordingTimer/30),3*FONT_HEIGHT)
+    end
+
+    drawPiano13Keys(0,29)
+  end -- TempoMapper
+
+
+  if game.scene == "HorizonalKeyboard" then
+
+    -- if notes are playing
+    if love.audio.getSourceCount() > 0 then
+      love.graphics.setFont(monoFont)
+      love.graphics.setColor(color.brightgreen)
+      for i = 21,108 do
+        if piano[i]:isPlaying() then
+          love.graphics.print("▼",(i-24)*FONT_WIDTH,0)
+        end
+      end
+    end
+
+    -- draw last to be top layer
+    drawHorizonalKeyboard()
+
   end
-
-  -- draw beats per bar when music is playing, and there is an average tempo calculated (need patching)
---  if music.barTimeElapsed ~= 0 and music.tempoAverage ~= 0 then
---    if music.barTimeElapsed > 3*(60/music.tempoAverage) then
---      love.graphics.print(music.barTimeElapsed .. "\nCurrent beat in bar   : 1 ... 2 ... 3 ... 4 ...", 0, 12*FONT2X_HEIGHT)
---    elseif music.barTimeElapsed > 2*(60/music.tempoAverage) then
---      love.graphics.print(music.barTimeElapsed .. "\nCurrent beat in bar   : 1 ... 2 ... 3 ...", 0, 12*FONT2X_HEIGHT)
---    elseif music.barTimeElapsed > 1*(60/music.tempoAverage) then
---      love.graphics.print(music.barTimeElapsed .. "\nCurrent beat in bar   : 1 ... 2 ...", 0, 12*FONT2X_HEIGHT)
---    else
---      love.graphics.print(music.barTimeElapsed .. "\nCurrent beat in bar   : 1 ...", 0, 12*FONT2X_HEIGHT)
---    end
---  end
-
--- draw recording timer bar
-if music.recordingDevice:isRecording() then
-  love.graphics.setColor(0,1,0,0.5)
-  love.graphics.setLineWidth(1)
-  if music.recordingTimer > 30 then
-    music.recordingTimer = 30
-  end
-  love.graphics.rectangle("fill",0,2*FONT2X_HEIGHT,640*(music.recordingTimer/30),3*FONT_HEIGHT)
-end
-
-drawPiano13Keys(0,29)
 
 
   -- draw click - text message (last layer to be on top of everything)
@@ -1189,6 +1214,227 @@ function love.update(dt)
 end
 
 function love.keypressed(key, scancode, isrepeat)
+
+  -- Inputs for "HorizonalKeyboard"
+  if game.scene == "HorizonalKeyboard" then
+    game.inputTips = "" -- init inputTips
+
+    -- "escape" to quit app
+    game.inputTips = game.inputTips .. "esc : quit the app\n"
+    if key == "escape" then
+      love.event.quit()
+    end
+
+    -- ZXC row of keys
+    if key == "z" then
+      if piano[36]:isPlaying() then
+        piano[36]:stop()
+      end
+      piano[36]:play()
+    end
+    if key == "x" then
+      if piano[38]:isPlaying() then
+        piano[38]:stop()
+      end
+      piano[38]:play()
+    end
+    if key == "c" then
+      if piano[40]:isPlaying() then
+        piano[40]:stop()
+      end
+      piano[40]:play()
+    end
+    if key == "v" then
+      if piano[41]:isPlaying() then
+        piano[41]:stop()
+      end
+      piano[41]:play()
+    end
+    if key == "b" then
+      if piano[43]:isPlaying() then
+        piano[43]:stop()
+      end
+      piano[43]:play()
+    end
+    if key == "n" then
+      if piano[45]:isPlaying() then
+        piano[45]:stop()
+      end
+      piano[45]:play()
+    end
+    if key == "m" then
+      if piano[47]:isPlaying() then
+        piano[47]:stop()
+      end
+      piano[47]:play()
+    end
+
+    -- ASD row of keys
+    if key == "a" or key == "," then
+      if piano[48]:isPlaying() then
+        piano[48]:stop()
+      end
+      piano[48]:play()
+    end
+    if key == "s" or key == "." then
+      if piano[50]:isPlaying() then
+        piano[50]:stop()
+      end
+      piano[50]:play()
+    end
+    if key == "d" or key == "/" then
+      if piano[52]:isPlaying() then
+        piano[52]:stop()
+      end
+      piano[52]:play()
+    end
+    if key == "f" then
+      if piano[53]:isPlaying() then
+        piano[53]:stop()
+      end
+      piano[53]:play()
+    end
+    if key == "g" then
+      if piano[55]:isPlaying() then
+        piano[55]:stop()
+      end
+      piano[55]:play()
+    end
+    if key == "h" then
+      if piano[57]:isPlaying() then
+        piano[57]:stop()
+      end
+      piano[57]:play()
+    end
+    if key == "j" then
+      if piano[59]:isPlaying() then
+        piano[59]:stop()
+      end
+      piano[59]:play()
+    end
+
+    -- QWE row of keys
+    if key == "q" or key == "k" then
+      if piano[60]:isPlaying() then
+        piano[60]:stop()
+      end
+      piano[60]:play()
+    end
+    if key == "w" or key == "l" then
+      if piano[62]:isPlaying() then
+        piano[62]:stop()
+      end
+      piano[62]:play()
+    end
+    if key == "e" or key == ";" then
+      if piano[64]:isPlaying() then
+        piano[64]:stop()
+      end
+      piano[64]:play()
+    end
+    if key == "r" or key == "'" then
+      if piano[65]:isPlaying() then
+        piano[65]:stop()
+      end
+      piano[65]:play()
+    end
+    if key == "t" then
+      if piano[67]:isPlaying() then
+        piano[67]:stop()
+      end
+      piano[67]:play()
+    end
+    if key == "y" then
+      if piano[69]:isPlaying() then
+        piano[69]:stop()
+      end
+      piano[69]:play()
+    end
+    if key == "u" then
+      if piano[71]:isPlaying() then
+        piano[71]:stop()
+      end
+      piano[71]:play()
+    end
+
+    -- 123 row of keys
+    if key == "1" or key == "i" then
+      if piano[72]:isPlaying() then
+        piano[72]:stop()
+      end
+      piano[72]:play()
+    end
+    if key == "2" or key == "o" then
+      if piano[74]:isPlaying() then
+        piano[74]:stop()
+      end
+      piano[74]:play()
+    end
+    if key == "3" or key == "p" then
+      if piano[76]:isPlaying() then
+        piano[76]:stop()
+      end
+      piano[76]:play()
+    end
+    if key == "4" or key == "[" then
+      if piano[77]:isPlaying() then
+        piano[77]:stop()
+      end
+      piano[77]:play()
+    end
+    if key == "5" or key == "]" then
+      if piano[79]:isPlaying() then
+        piano[79]:stop()
+      end
+      piano[79]:play()
+    end
+    if key == "6" or key == "\\" then
+      if piano[81]:isPlaying() then
+        piano[81]:stop()
+      end
+      piano[81]:play()
+    end
+    if key == "7" then
+      if piano[83]:isPlaying() then
+        piano[83]:stop()
+      end
+      piano[83]:play()
+    end
+
+    -- Extended top 890... row of keys
+    if key == "8" then
+      if piano[84]:isPlaying() then
+        piano[84]:stop()
+      end
+      piano[84]:play()
+    end
+    if key == "9" then
+      if piano[86]:isPlaying() then
+        piano[86]:stop()
+      end
+      piano[86]:play()
+    end
+    if key == "0" then
+      if piano[88]:isPlaying() then
+        piano[88]:stop()
+      end
+      piano[88]:play()
+    end
+    if key == "-" then
+      if piano[89]:isPlaying() then
+        piano[89]:stop()
+      end
+      piano[89]:play()
+    end
+    if key == "=" then
+      if piano[91]:isPlaying() then
+        piano[91]:stop()
+      end
+      piano[91]:play()
+    end
+
+
+  end
 
   -- Inputs for "TempoMapper"
   if game.scene == "TempoMapper" then
