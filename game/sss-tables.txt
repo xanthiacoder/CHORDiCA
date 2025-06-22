@@ -1,0 +1,112 @@
+MODES
+
+https://blog.landr.com/music-modes/
+
+7 modes, Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian and Locrian
+
+There are 7 modes in music:
+
+Ionian - major scale
+Dorian - minor-related
+Phrygian - minor-related
+Lydian - haunting major
+Mixolydian - blues-like
+Aeolian - natural minor
+Locrian - most rare
+
+Ionian – Major (no altered notes)
+Dorian – minor +raised 6th, lowered 7th
+Phrygian – minor + lowered 2nd, lowered 6th, lowered 7th
+Lydian – Major + raised 4th
+Mixolydian – Major +lowered 7th
+Aeolian – minor + lowered 6th, lowered 7th
+
+
+modesLUT (using midi note values)
+
+TABLE   MIDI    NOTE
+1       36      C2
+2       38      D2
+3       40      E2
+4       41      F2
+5       43      G2
+6       45      A2
+7       47      B2
+8       48      C3
+9       50      D3
+10      52      E3
+11      53      F3
+12      55      G3
+13      57      A3
+14      59      B3
+
+pseudocode for loading modes
+
+-- mode 1, key C
+for i = 1,7 do 
+  note[i] = table[i]
+end
+modeShift = 0
+
+-- mode 2, key C
+for i = 1,7 do
+  note[i] = table[i+1]
+end
+modeShift = -2
+
+-- mode 3, key C
+for i = 1,7 do
+  note[i] = table[i+2]
+end
+modeShift = -4
+
+-- mode 4, key C
+for i = 1,7 do
+  note[i] = table[i+3]
+end
+modeShift = -5
+
+-- mode 5, key C
+for i = 1,7 do
+  note[i] = table[i+4]
+end
+modeShift = -7
+
+-- mode 6, key C
+for i = 1,7 do
+  note[i] = table[i+5]
+end
+modeShift = -9
+
+- mode 7, key C
+for i = 1,7 do
+  note[i] = table[i+6]
+end
+modeShift = -11
+
+once we have the base set of 7 notes, we assign them
+transpose = 0
+-- release old source data (mapped 33 keys)
+for i = 1,33 do
+  keyAudio[i]:release()
+end
+-- load base set
+for i = 1,7 do
+  keyAudio[i] = love.audio.newSource( inst .. note[i]+modeShift+transpose .. ogg  )
+end
+-- load others based on offset
+for i = 8,14 do
+  keyAudio[i] = love.audio.newSource( inst .. note[i-7]+modeShift+transpose+12 .. ogg  )
+  keyAudio[i+7] = love.audio.newSource( inst .. note[i-7]+modeShift+transpose+24 .. ogg  )
+  keyAudio[i+14] = love.audio.newSource( inst .. note[i-7]+modeShift+transpose+36 .. ogg  )
+end
+-- load extended set
+for i = 29,33 do
+  keyAudio[i] = love.audio.newSource( inst .. note[i-28]+modeShift+transpose+48 .. ogg  )
+end
+
+-- permanent assignment
+z = keyAudio[1]
+x = keyAudio[2]
+c = keyAudio[3]
+...

@@ -120,6 +120,25 @@ G- = g- a- b- c- d- e- f  <-- special condition c- (b)
 G  = g  a  b  c  d  e  f+
 A- = a- b- c  d- e- f  g
 
+
+modesLUT (using midi note values)
+
+TABLE   MIDI    NOTE
+1       36      C2
+2       38      D2
+3       40      E2
+4       41      F2
+5       43      G2
+6       45      A2
+7       47      B2
+8       48      C3
+9       50      D3
+10      52      E3
+11      53      F3
+12      55      G3
+13      57      A3
+14      59      B3
+
 ]]
 
 love.filesystem.setIdentity("CHORDiCA") -- for R36S file system compatibility
@@ -152,6 +171,24 @@ local charTable = {
   [15] = {"☺","☻","♥","♦","♣","♠","•","◘","○","◙","♀",},
   [16] = {string.char(14),string.char(15),string.char(16),string.char(17),string.char(18),string.char(19),string.char(20),string.char(21),string.char(22),string.char(23),string.char(24),},
   [17] = {string.char(25),string.char(26),string.char(27),string.char(28),string.char(29),string.char(30),string.char(31),string.char(32),string.char(33),string.char(34),string.char(35),},
+}
+
+-- music modes look up table key-to-midi
+local modesLUT = {
+[1] = 36,
+[2] = 38,
+[3] = 40,
+[4] = 41,
+[5] = 43,
+[6] = 45,
+[7] = 47,
+[8] = 48,
+[9] = 50,
+[10] = 52,
+[11] = 53,
+[12] = 55,
+[13] = 57,
+[14] = 59,
 }
 
 
@@ -424,7 +461,6 @@ function generateWaveform(imageWidth,imageHeight)
         end
 
         for i = y, imageHeight - y do
-            print("x:"..x.."y:"..i)
             music.waveData:setPixel(x, i, 1, 1, 1, 1)
         end
     end
@@ -470,6 +506,97 @@ chordica.melody = {}
 chordica.harmony = {}
 chordica.bass = {}
 chordica.rhythm = {}
+chordica.note = {} -- base set of 7 notes for midi audio assignment
+chordica.mode = 1
+chordica.modeShift = 0 -- variable to set music modes
+chordica.keyAudio = {} -- sources for keyboard sounds
+chordica.transpose = 0
+
+---use to load or reload instrument sounds
+---@param inst string name of instrument to load (no checks, must be valid!)
+---@param mode integer from 1 to 7
+function loadInstrument(inst, mode)
+
+  if mode == 1 then
+    -- mode 1, key C
+    for i = 1,7 do
+      chordica.note[i] = modesLUT[i]
+    end
+    chordica.mode = 1
+    chordica.modeShift = 0
+  end
+
+  if mode == 2 then
+    -- mode 2, key C
+    for i = 1,7 do
+      chordica.note[i] = modesLUT[i+1]
+    end
+    chordica.mode = 2
+    chordica.modeShift = -2
+  end
+
+  if mode == 3 then
+    -- mode 3, key C
+    for i = 1,7 do
+      chordica.note[i] = modesLUT[i+2]
+    end
+    chordica.mode = 3
+    chordica.modeShift = -4
+  end
+
+  if mode == 4 then
+    -- mode 4, key C
+    for i = 1,7 do
+      chordica.note[i] = modesLUT[i+3]
+    end
+    chordica.mode = 4
+    chordica.modeShift = -5
+  end
+
+  if mode == 5 then
+    -- mode 5, key C
+    for i = 1,7 do
+      chordica.note[i] = modesLUT[i+4]
+    end
+    chordica.mode = 5
+    chordica.modeShift = -7
+  end
+
+  if mode == 6 then
+    -- mode 6, key C
+    for i = 1,7 do
+      chordica.note[i] = modesLUT[i+5]
+    end
+    chordica.mode = 6
+    chordica.modeShift = -9
+  end
+
+  if mode == 7 then
+    -- mode 6, key C
+    for i = 1,7 do
+      chordica.note[i] = modesLUT[i+6]
+    end
+    chordica.mode = 7
+    chordica.modeShift = -11
+  end
+
+  -- load base set
+  for i = 1,7 do
+    chordica.keyAudio[i] = love.audio.newSource("res/".. inst .."/" ..chordica.note[i]+chordica.modeShift+chordica.transpose .. ".ogg", "static")
+  end
+  -- load others based on offset
+  for i = 8,14 do
+    chordica.keyAudio[i] = love.audio.newSource("res/".. inst .."/" ..chordica.note[i-7]+chordica.modeShift+chordica.transpose+12 .. ".ogg", "static")
+    chordica.keyAudio[i+7] = love.audio.newSource("res/".. inst .."/" ..chordica.note[i-7]+chordica.modeShift+chordica.transpose+24 .. ".ogg", "static")
+    chordica.keyAudio[i+14] = love.audio.newSource("res/".. inst .."/" ..chordica.note[i-7]+chordica.modeShift+chordica.transpose+36 .. ".ogg", "static")
+  end
+  -- load extended set
+  for i = 29,33 do
+    chordica.keyAudio[i] = love.audio.newSource("res/".. inst .."/" ..chordica.note[i-28]+chordica.modeShift+chordica.transpose+48 .. ".ogg", "static")
+  end
+
+end
+
 
 -- alpha values to simulate fading
 local keyFinder = {}
@@ -598,6 +725,9 @@ function love.load()
     piano[i] = love.audio.newSource("res/piano/" .. i .. ".ogg", "static")
   end
 
+  -- load piano sounds using new mode function
+  loadInstrument("piano", 1)
+
   -- fonts
   monoFont = love.graphics.newFont("fonts/"..FONT, FONT_SIZE)
   monoFont2s = love.graphics.newFont("fonts/"..FONT, FONT_SIZE*2)
@@ -617,7 +747,7 @@ function love.load()
   xtui = {}
   xtui["piano-13"] = json.decode(love.filesystem.read("xtui/0-piano-13keys.xtui"))
   xtui["horizontalKeyboard"] = json.decode(love.filesystem.read("xtui/0-horizontalkeyboard.xtui"))
-
+  xtui["sss"] = json.decode(love.filesystem.read("xtui/0-sss.xtui"))
 
   -- [scene number][screen 1,screen 2,screen 1 bgcolor, screen 2 bgcolor]
   screen = {}
@@ -860,6 +990,21 @@ function drawHorizonalKeyboard()
   love.graphics.print(xtui["horizontalKeyboard"], 0, 0)
 end
 
+---draw colored background for virtual keyboard keypresses
+---@param bgcolor integer 0..15
+---@param x integer coordinatebased on monoFont2x
+---@param y integer coordinate based on monoFont2x
+function drawKeyboardKeypressed(bgcolor, x, y)
+  love.graphics.setFont(monoFont2x)
+  love.graphics.setColor(color[bgcolor])
+  love.graphics.print("▐███▌\n▐███▌\n▐███▌\n▐███▌\n", (x-1)*FONT2X_WIDTH, y*FONT2X_HEIGHT)
+end
+
+function drawSSS()
+  love.graphics.setFont(monoFont)
+  love.graphics.setColor(color.white)
+  love.graphics.print(xtui["sss"], 640, 0)
+end
 
 function drawPiano13Keys(x,y)
   -- draw Piano 13 keys
@@ -1063,8 +1208,11 @@ function love.draw()
 
   if game.scene == "HorizonalKeyboard" then
 
-    -- if notes are playing
-    if love.audio.getSourceCount() > 0 then
+    -- draw first to be the bottom layer
+
+
+    -- if notes are playing ()
+    if love.audio.getActiveSourceCount() > 0 then
       love.graphics.setFont(monoFont)
       love.graphics.setColor(color.brightgreen)
       for i = 21,108 do
@@ -1074,7 +1222,150 @@ function love.draw()
       end
     end
 
+    -- keys are pressed (show highlight)
+    if love.keyboard.isDown("z") then
+      drawKeyboardKeypressed(7, 4, 47)
+    end
+    if love.keyboard.isDown("x") then
+      drawKeyboardKeypressed(7, 4+4, 47)
+    end
+    if love.keyboard.isDown("c") then
+      drawKeyboardKeypressed(7, 4+8, 47)
+    end
+    if love.keyboard.isDown("v") then
+      drawKeyboardKeypressed(7, 4+12, 47)
+    end
+    if love.keyboard.isDown("b") then
+      drawKeyboardKeypressed(7, 4+16, 47)
+    end
+    if love.keyboard.isDown("n") then
+      drawKeyboardKeypressed(7, 4+20, 47)
+    end
+    if love.keyboard.isDown("m") then
+      drawKeyboardKeypressed(7, 4+24, 47)
+    end
+    if love.keyboard.isDown(",") then
+      drawKeyboardKeypressed(7, 4+28, 47)
+    end
+    if love.keyboard.isDown(".") then
+      drawKeyboardKeypressed(7, 4+32, 47)
+    end
+    if love.keyboard.isDown("/") then
+      drawKeyboardKeypressed(7, 4+36, 47)
+    end
+    if love.keyboard.isDown("a") then
+      drawKeyboardKeypressed(7, 3, 43)
+    end
+    if love.keyboard.isDown("s") then
+      drawKeyboardKeypressed(7, 3+4, 43)
+    end
+    if love.keyboard.isDown("d") then
+      drawKeyboardKeypressed(7, 3+8, 43)
+    end
+    if love.keyboard.isDown("f") then
+      drawKeyboardKeypressed(7, 3+12, 43)
+    end
+    if love.keyboard.isDown("g") then
+      drawKeyboardKeypressed(7, 3+16, 43)
+    end
+    if love.keyboard.isDown("h") then
+      drawKeyboardKeypressed(7, 3+20, 43)
+    end
+    if love.keyboard.isDown("j") then
+      drawKeyboardKeypressed(7, 3+24, 43)
+    end
+    if love.keyboard.isDown("k") then
+      drawKeyboardKeypressed(7, 3+28, 43)
+    end
+    if love.keyboard.isDown("l") then
+      drawKeyboardKeypressed(7, 3+32, 43)
+    end
+    if love.keyboard.isDown(";") then
+      drawKeyboardKeypressed(7, 3+36, 43)
+    end
+    if love.keyboard.isDown("'") then
+      drawKeyboardKeypressed(7, 3+40, 43)
+    end
+    if love.keyboard.isDown("q") then
+      drawKeyboardKeypressed(7, 2, 39)
+    end
+    if love.keyboard.isDown("w") then
+      drawKeyboardKeypressed(7, 2+4, 39)
+    end
+    if love.keyboard.isDown("e") then
+      drawKeyboardKeypressed(7, 2+8, 39)
+    end
+    if love.keyboard.isDown("r") then
+      drawKeyboardKeypressed(7, 2+12, 39)
+    end
+    if love.keyboard.isDown("t") then
+      drawKeyboardKeypressed(7, 2+16, 39)
+    end
+    if love.keyboard.isDown("y") then
+      drawKeyboardKeypressed(7, 2+20, 39)
+    end
+    if love.keyboard.isDown("u") then
+      drawKeyboardKeypressed(7, 2+24, 39)
+    end
+    if love.keyboard.isDown("i") then
+      drawKeyboardKeypressed(7, 2+28, 39)
+    end
+    if love.keyboard.isDown("o") then
+      drawKeyboardKeypressed(7, 2+32, 39)
+    end
+    if love.keyboard.isDown("p") then
+      drawKeyboardKeypressed(7, 2+36, 39)
+    end
+    if love.keyboard.isDown("[") then
+      drawKeyboardKeypressed(7, 2+40, 39)
+    end
+    if love.keyboard.isDown("]") then
+      drawKeyboardKeypressed(7, 2+44, 39)
+    end
+    if love.keyboard.isDown("1") then
+      drawKeyboardKeypressed(7, 1, 35)
+    end
+    if love.keyboard.isDown("2") then
+      drawKeyboardKeypressed(7, 1+4, 35)
+    end
+    if love.keyboard.isDown("3") then
+      drawKeyboardKeypressed(7, 1+8, 35)
+    end
+    if love.keyboard.isDown("4") then
+      drawKeyboardKeypressed(7, 1+12, 35)
+    end
+    if love.keyboard.isDown("5") then
+      drawKeyboardKeypressed(7, 1+16, 35)
+    end
+    if love.keyboard.isDown("6") then
+      drawKeyboardKeypressed(7, 1+20, 35)
+    end
+    if love.keyboard.isDown("7") then
+      drawKeyboardKeypressed(7, 1+24, 35)
+    end
+    if love.keyboard.isDown("8") then
+      drawKeyboardKeypressed(7, 1+28, 35)
+    end
+    if love.keyboard.isDown("9") then
+      drawKeyboardKeypressed(7, 1+32, 35)
+    end
+    if love.keyboard.isDown("0") then
+      drawKeyboardKeypressed(7, 1+36, 35)
+    end
+    if love.keyboard.isDown("-") then
+      drawKeyboardKeypressed(7, 1+40, 35)
+    end
+    if love.keyboard.isDown("=") then
+      drawKeyboardKeypressed(7, 1+44, 35)
+    end
+
+    -- display current mode
+    love.graphics.setFont(monoFont)
+    love.graphics.setColor(color.brightcyan)
+    love.graphics.print("Music mode: " .. chordica.mode .. " (press F1 to change)", 0 ,5*FONT_HEIGHT)
+
     -- draw last to be top layer
+    drawSSS()
     drawHorizonalKeyboard()
 
   end
@@ -1215,222 +1506,228 @@ end
 
 function love.keypressed(key, scancode, isrepeat)
 
-  -- Inputs for "HorizonalKeyboard"
+  -- Inputs for "HorizonalKeyboard" with SSS
   if game.scene == "HorizonalKeyboard" then
     game.inputTips = "" -- init inputTips
 
     -- "escape" to quit app
-    game.inputTips = game.inputTips .. "esc : quit the app\n"
     if key == "escape" then
       love.event.quit()
     end
 
+    -- F1 to change modes (1..7)
+    if key == "f1" then
+      chordica.mode = chordica.mode + 1
+      if chordica.mode == 8 then chordica.mode = 1 end
+      loadInstrument("piano",chordica.mode)
+    end
+
     -- ZXC row of keys
     if key == "z" then
-      if piano[36]:isPlaying() then
-        piano[36]:stop()
+      if chordica.keyAudio[1]:isPlaying() then
+        chordica.keyAudio[1]:stop()
       end
-      piano[36]:play()
+      chordica.keyAudio[1]:play()
     end
     if key == "x" then
-      if piano[38]:isPlaying() then
-        piano[38]:stop()
+      if chordica.keyAudio[2]:isPlaying() then
+        chordica.keyAudio[2]:stop()
       end
-      piano[38]:play()
+      chordica.keyAudio[2]:play()
     end
     if key == "c" then
-      if piano[40]:isPlaying() then
-        piano[40]:stop()
+      if chordica.keyAudio[3]:isPlaying() then
+        chordica.keyAudio[3]:stop()
       end
-      piano[40]:play()
+      chordica.keyAudio[3]:play()
     end
     if key == "v" then
-      if piano[41]:isPlaying() then
-        piano[41]:stop()
+      if chordica.keyAudio[4]:isPlaying() then
+        chordica.keyAudio[4]:stop()
       end
-      piano[41]:play()
+      chordica.keyAudio[4]:play()
     end
     if key == "b" then
-      if piano[43]:isPlaying() then
-        piano[43]:stop()
+      if chordica.keyAudio[5]:isPlaying() then
+        chordica.keyAudio[5]:stop()
       end
-      piano[43]:play()
+      chordica.keyAudio[5]:play()
     end
     if key == "n" then
-      if piano[45]:isPlaying() then
-        piano[45]:stop()
+      if chordica.keyAudio[6]:isPlaying() then
+        chordica.keyAudio[6]:stop()
       end
-      piano[45]:play()
+      chordica.keyAudio[6]:play()
     end
     if key == "m" then
-      if piano[47]:isPlaying() then
-        piano[47]:stop()
+      if chordica.keyAudio[7]:isPlaying() then
+        chordica.keyAudio[7]:stop()
       end
-      piano[47]:play()
+      chordica.keyAudio[7]:play()
     end
 
     -- ASD row of keys
     if key == "a" or key == "," then
-      if piano[48]:isPlaying() then
-        piano[48]:stop()
+      if chordica.keyAudio[8]:isPlaying() then
+        chordica.keyAudio[8]:stop()
       end
-      piano[48]:play()
+      chordica.keyAudio[8]:play()
     end
     if key == "s" or key == "." then
-      if piano[50]:isPlaying() then
-        piano[50]:stop()
+      if chordica.keyAudio[9]:isPlaying() then
+        chordica.keyAudio[9]:stop()
       end
-      piano[50]:play()
+      chordica.keyAudio[9]:play()
     end
     if key == "d" or key == "/" then
-      if piano[52]:isPlaying() then
-        piano[52]:stop()
+      if chordica.keyAudio[10]:isPlaying() then
+        chordica.keyAudio[10]:stop()
       end
-      piano[52]:play()
+      chordica.keyAudio[10]:play()
     end
     if key == "f" then
-      if piano[53]:isPlaying() then
-        piano[53]:stop()
+      if chordica.keyAudio[11]:isPlaying() then
+        chordica.keyAudio[11]:stop()
       end
-      piano[53]:play()
+      chordica.keyAudio[11]:play()
     end
     if key == "g" then
-      if piano[55]:isPlaying() then
-        piano[55]:stop()
+      if chordica.keyAudio[12]:isPlaying() then
+        chordica.keyAudio[12]:stop()
       end
-      piano[55]:play()
+      chordica.keyAudio[12]:play()
     end
     if key == "h" then
-      if piano[57]:isPlaying() then
-        piano[57]:stop()
+      if chordica.keyAudio[13]:isPlaying() then
+        chordica.keyAudio[13]:stop()
       end
-      piano[57]:play()
+      chordica.keyAudio[13]:play()
     end
     if key == "j" then
-      if piano[59]:isPlaying() then
-        piano[59]:stop()
+      if chordica.keyAudio[14]:isPlaying() then
+        chordica.keyAudio[14]:stop()
       end
-      piano[59]:play()
+      chordica.keyAudio[14]:play()
     end
 
     -- QWE row of keys
     if key == "q" or key == "k" then
-      if piano[60]:isPlaying() then
-        piano[60]:stop()
+      if chordica.keyAudio[15]:isPlaying() then
+        chordica.keyAudio[15]:stop()
       end
-      piano[60]:play()
+      chordica.keyAudio[15]:play()
     end
     if key == "w" or key == "l" then
-      if piano[62]:isPlaying() then
-        piano[62]:stop()
+      if chordica.keyAudio[16]:isPlaying() then
+        chordica.keyAudio[16]:stop()
       end
-      piano[62]:play()
+      chordica.keyAudio[16]:play()
     end
     if key == "e" or key == ";" then
-      if piano[64]:isPlaying() then
-        piano[64]:stop()
+      if chordica.keyAudio[17]:isPlaying() then
+        chordica.keyAudio[17]:stop()
       end
-      piano[64]:play()
+      chordica.keyAudio[17]:play()
     end
     if key == "r" or key == "'" then
-      if piano[65]:isPlaying() then
-        piano[65]:stop()
+      if chordica.keyAudio[18]:isPlaying() then
+        chordica.keyAudio[18]:stop()
       end
-      piano[65]:play()
+      chordica.keyAudio[18]:play()
     end
     if key == "t" then
-      if piano[67]:isPlaying() then
-        piano[67]:stop()
+      if chordica.keyAudio[19]:isPlaying() then
+        chordica.keyAudio[19]:stop()
       end
-      piano[67]:play()
+      chordica.keyAudio[19]:play()
     end
     if key == "y" then
-      if piano[69]:isPlaying() then
-        piano[69]:stop()
+      if chordica.keyAudio[20]:isPlaying() then
+        chordica.keyAudio[20]:stop()
       end
-      piano[69]:play()
+      chordica.keyAudio[20]:play()
     end
     if key == "u" then
-      if piano[71]:isPlaying() then
-        piano[71]:stop()
+      if chordica.keyAudio[21]:isPlaying() then
+        chordica.keyAudio[21]:stop()
       end
-      piano[71]:play()
+      chordica.keyAudio[21]:play()
     end
 
     -- 123 row of keys
     if key == "1" or key == "i" then
-      if piano[72]:isPlaying() then
-        piano[72]:stop()
+      if chordica.keyAudio[22]:isPlaying() then
+        chordica.keyAudio[22]:stop()
       end
-      piano[72]:play()
+      chordica.keyAudio[22]:play()
     end
     if key == "2" or key == "o" then
-      if piano[74]:isPlaying() then
-        piano[74]:stop()
+      if chordica.keyAudio[23]:isPlaying() then
+        chordica.keyAudio[23]:stop()
       end
-      piano[74]:play()
+      chordica.keyAudio[23]:play()
     end
     if key == "3" or key == "p" then
-      if piano[76]:isPlaying() then
-        piano[76]:stop()
+      if chordica.keyAudio[24]:isPlaying() then
+        chordica.keyAudio[24]:stop()
       end
-      piano[76]:play()
+      chordica.keyAudio[24]:play()
     end
     if key == "4" or key == "[" then
-      if piano[77]:isPlaying() then
-        piano[77]:stop()
+      if chordica.keyAudio[25]:isPlaying() then
+        chordica.keyAudio[25]:stop()
       end
-      piano[77]:play()
+      chordica.keyAudio[25]:play()
     end
     if key == "5" or key == "]" then
-      if piano[79]:isPlaying() then
-        piano[79]:stop()
+      if chordica.keyAudio[26]:isPlaying() then
+        chordica.keyAudio[26]:stop()
       end
-      piano[79]:play()
+      chordica.keyAudio[26]:play()
     end
     if key == "6" or key == "\\" then
-      if piano[81]:isPlaying() then
-        piano[81]:stop()
+      if chordica.keyAudio[27]:isPlaying() then
+        chordica.keyAudio[27]:stop()
       end
-      piano[81]:play()
+      chordica.keyAudio[27]:play()
     end
     if key == "7" then
-      if piano[83]:isPlaying() then
-        piano[83]:stop()
+      if chordica.keyAudio[28]:isPlaying() then
+        chordica.keyAudio[28]:stop()
       end
-      piano[83]:play()
+      chordica.keyAudio[28]:play()
     end
 
     -- Extended top 890... row of keys
     if key == "8" then
-      if piano[84]:isPlaying() then
-        piano[84]:stop()
+      if chordica.keyAudio[29]:isPlaying() then
+        chordica.keyAudio[29]:stop()
       end
-      piano[84]:play()
+      chordica.keyAudio[29]:play()
     end
     if key == "9" then
-      if piano[86]:isPlaying() then
-        piano[86]:stop()
+      if chordica.keyAudio[30]:isPlaying() then
+        chordica.keyAudio[30]:stop()
       end
-      piano[86]:play()
+      chordica.keyAudio[30]:play()
     end
     if key == "0" then
-      if piano[88]:isPlaying() then
-        piano[88]:stop()
+      if chordica.keyAudio[31]:isPlaying() then
+        chordica.keyAudio[31]:stop()
       end
-      piano[88]:play()
+      chordica.keyAudio[31]:play()
     end
     if key == "-" then
-      if piano[89]:isPlaying() then
-        piano[89]:stop()
+      if chordica.keyAudio[32]:isPlaying() then
+        chordica.keyAudio[32]:stop()
       end
-      piano[89]:play()
+      chordica.keyAudio[32]:play()
     end
     if key == "=" then
-      if piano[91]:isPlaying() then
-        piano[91]:stop()
+      if chordica.keyAudio[33]:isPlaying() then
+        chordica.keyAudio[33]:stop()
       end
-      piano[91]:play()
+      chordica.keyAudio[33]:play()
     end
 
 
