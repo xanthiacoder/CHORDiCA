@@ -191,6 +191,20 @@ local modesLUT = {
 [14] = 59,
 }
 
+local songKeyLUT = {
+  [1] = "C",
+  [2] = "C#/Db",
+  [3] = "D",
+  [4] = "D#/Eb",
+  [5] = "E",
+  [6] = "F",
+  [7] = "F#/Gb",
+  [8] = "G",
+  [9] = "G#/Ab",
+  [10] = "A",
+  [11] = "A#/Bb",
+  [12] = "B",
+}
 
 -- first item is the menu category, the rest are the category's options
 local menuTable = {
@@ -511,6 +525,7 @@ chordica.mode = 1
 chordica.modeShift = 0 -- variable to set music modes
 chordica.keyAudio = {} -- sources for keyboard sounds
 chordica.transpose = 0
+chordica.songKey = 1 -- 1..12, 1 = C, 12 = B
 
 ---use to load or reload instrument sounds
 ---@param inst string name of instrument to load (no checks, must be valid!)
@@ -1362,7 +1377,10 @@ function love.draw()
     -- display current mode
     love.graphics.setFont(monoFont)
     love.graphics.setColor(color.brightcyan)
-    love.graphics.print("Music mode: " .. chordica.mode .. " (press F1 to change)", 0 ,5*FONT_HEIGHT)
+    love.graphics.print("Music mode: " .. chordica.mode .. " (F1 to change)", 0 ,5*FONT_HEIGHT)
+    love.graphics.print("Song Key: " .. songKeyLUT[chordica.songKey], 0, 6*FONT_HEIGHT)
+    love.graphics.print("Transpose: " .. chordica.transpose .. " (F2 to raise, F3 to lower)", 0, 7*FONT_HEIGHT)
+
 
     -- draw last to be top layer
     drawSSS()
@@ -1521,6 +1539,30 @@ function love.keypressed(key, scancode, isrepeat)
       if chordica.mode == 8 then chordica.mode = 1 end
       loadInstrument("piano",chordica.mode)
     end
+
+    -- F2 to transpose UP
+    if key == "f2" then
+      print(chordica.note[1]+chordica.transpose)
+      if chordica.note[1]+chordica.transpose < 52 then -- highest for 4 1/2 octaves
+        chordica.transpose = chordica.transpose + 1
+        chordica.songKey = chordica.songKey + 1
+        if chordica.songKey == 13 then chordica.songKey = 1 end
+        loadInstrument("piano",chordica.mode)
+      end
+    end
+
+    -- F3 to transpose DOWN
+    if key == "f3" then
+      print(chordica.note[1]+chordica.transpose)
+      if chordica.note[1]+chordica.transpose > 21 then -- lowest for 4 1/2 octaves
+        chordica.transpose = chordica.transpose - 1
+        chordica.songKey = chordica.songKey - 1
+        if chordica.songKey == 0 then chordica.songKey = 12 end
+        loadInstrument("piano",chordica.mode)
+      end
+    end
+
+
 
     -- ZXC row of keys
     if key == "z" then
