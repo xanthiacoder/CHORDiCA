@@ -173,6 +173,8 @@ local charTable = {
   [17] = {string.char(25),string.char(26),string.char(27),string.char(28),string.char(29),string.char(30),string.char(31),string.char(32),string.char(33),string.char(34),string.char(35),},
 }
 
+local piano73Keys = "█ █ ██ █ █ ██ █ ██ █ █ ██ █ ██ █ █ ██ █ ██ █ █ ██ █ ██ █ █ ██ █ ██ █ █ ██\n█▓█▓██▓█▓█▓██▓█▓██▓█▓█▓██▓█▓██▓█▓█▓██▓█▓██▓█▓█▓██▓█▓██▓█▓█▓██▓█▓██▓█▓█▓██"
+
 -- music modes look up table key-to-midi
 local modesLUT = {
 [1] = 36,
@@ -205,6 +207,14 @@ local songKeyLUT = {
   [11] = "A#/Bb",
   [12] = "B",
 }
+
+local vKeyboardNoteLUT = {
+  [1] = {},
+  [2] = {},
+  [3] = {},
+  [4] = {},
+}
+
 
 -- first item is the menu category, the rest are the category's options
 local menuTable = {
@@ -409,6 +419,21 @@ function saveData( filename , directory , data )
   end
 end
 
+-- init UI variables
+local textUI = {}
+-- audio sources loading
+textUI.audioLoading = 21 -- for 21..108 to load full range of midi notes according to a piano
+-- volMeter fader = lastPlayed currentDuration, totalDuration
+textUI.volMeter = {
+  [1] = {0,0},
+  [2] = {0,0},
+  [3] = {0,0},
+  [4] = {0,0},
+  [5] = {0,0},
+  [6] = {0,0},
+  [7] = {0,0},
+}
+
 
 -- init music data table
 local music = {}
@@ -523,9 +548,24 @@ chordica.rhythm = {}
 chordica.note = {} -- base set of 7 notes for midi audio assignment
 chordica.mode = 1
 chordica.modeShift = 0 -- variable to set music modes
-chordica.keyAudio = {} -- sources for keyboard sounds
 chordica.transpose = 0
 chordica.songKey = 1 -- 1..12, 1 = C, 12 = B
+chordica.currentTrack = 1 -- current selected track (default melody)
+-- instrument loading table {"name", lowest midi note, highest midi note}
+chordica.instrument = {
+  [1] = {"piano" , 21, 108} , -- melody track (default instrument)
+  [2] = {"guitar", 36,  96} , -- harmony track (default instrument)
+  [3] = {"violin", 36,  96} , -- bass track (default instrument)
+  [4] = {"piano" , 21, 108} , -- rhythm track (default instrument)
+}
+
+-- init instrument audio sources
+local trackAudio = {
+  [1] = {}, -- melody audio sources
+  [2] = {}, -- harmony audio sources
+  [3] = {}, -- bass track
+  [4] = {}, -- rhythm track
+}
 
 ---use to load or reload instrument sounds
 ---@param inst string name of instrument to load (no checks, must be valid!)
@@ -597,17 +637,14 @@ function loadInstrument(inst, mode)
 
   -- load base set
   for i = 1,7 do
-    chordica.keyAudio[i] = love.audio.newSource("res/".. inst .."/" ..chordica.note[i]+chordica.modeShift+chordica.transpose .. ".ogg", "static")
-  end
-  -- load others based on offset
-  for i = 8,14 do
-    chordica.keyAudio[i] = love.audio.newSource("res/".. inst .."/" ..chordica.note[i-7]+chordica.modeShift+chordica.transpose+12 .. ".ogg", "static")
-    chordica.keyAudio[i+7] = love.audio.newSource("res/".. inst .."/" ..chordica.note[i-7]+chordica.modeShift+chordica.transpose+24 .. ".ogg", "static")
-    chordica.keyAudio[i+14] = love.audio.newSource("res/".. inst .."/" ..chordica.note[i-7]+chordica.modeShift+chordica.transpose+36 .. ".ogg", "static")
+    vKeyboardNoteLUT[4][i] = chordica.note[i]+chordica.modeShift+chordica.transpose
+    vKeyboardNoteLUT[3][i] = chordica.note[i]+chordica.modeShift+chordica.transpose+12
+    vKeyboardNoteLUT[2][i] = chordica.note[i]+chordica.modeShift+chordica.transpose+24
+    vKeyboardNoteLUT[1][i] = chordica.note[i]+chordica.modeShift+chordica.transpose+36
   end
   -- load extended set
   for i = 29,33 do
-    chordica.keyAudio[i] = love.audio.newSource("res/".. inst .."/" ..chordica.note[i-28]+chordica.modeShift+chordica.transpose+48 .. ".ogg", "static")
+    vKeyboardNoteLUT[1][i-21] = chordica.note[i-28]+chordica.modeShift+chordica.transpose+48
   end
 
 end
@@ -732,13 +769,27 @@ end
 function love.load()
   -- Your game load here
 
-  game.message = "CHORDiCA (Desktop Edition) - press Enter to continue"
-
-  -- load origial CHORDiCA piano sounds
-  piano = {}
-  for i = 21,108 do
-    piano[i] = love.audio.newSource("res/piano/" .. i .. ".ogg", "static")
+--[[ old method for front-loading ... induces spinning beachball
+  -- load track 1 (melody) sounds using new tables
+  for i = chordica.instrument[1][2],chordica.instrument[1][3] do
+    trackAudio[1][i] = love.audio.newSource("res/".. chordica.instrument[1][1] .."/" .. i .. ".ogg", "static")
   end
+
+  -- load track 2 (harmony) sounds using new tables
+  for i = chordica.instrument[2][2],chordica.instrument[2][3] do
+    trackAudio[2][i] = love.audio.newSource("res/".. chordica.instrument[2][1] .."/" .. i .. ".ogg", "static")
+  end
+
+  -- load track 3 (bass) sounds using new tables
+  for i = chordica.instrument[3][2],chordica.instrument[3][3] do
+    trackAudio[3][i] = love.audio.newSource("res/".. chordica.instrument[3][1] .."/" .. i .. ".ogg", "static")
+  end
+
+  -- load track 4 (rhythm) sounds using new tables
+  for i = chordica.instrument[4][2],chordica.instrument[4][3] do
+    trackAudio[4][i] = love.audio.newSource("res/".. chordica.instrument[4][1] .."/" .. i .. ".ogg", "static")
+  end
+]]
 
   -- load piano sounds using new mode function
   loadInstrument("piano", 1)
@@ -1231,7 +1282,7 @@ function love.draw()
       love.graphics.setFont(monoFont)
       love.graphics.setColor(color.brightgreen)
       for i = 21,108 do
-        if piano[i]:isPlaying() then
+        if trackAudio[1][i]:isPlaying() then
           love.graphics.print("▼",(i-24)*FONT_WIDTH,0)
         end
       end
@@ -1380,11 +1431,26 @@ function love.draw()
     love.graphics.print("Music mode: " .. chordica.mode .. " (F1 to change)", 0 ,5*FONT_HEIGHT)
     love.graphics.print("Song Key: " .. songKeyLUT[chordica.songKey], 0, 6*FONT_HEIGHT)
     love.graphics.print("Transpose: " .. chordica.transpose .. " (F2 to raise, F3 to lower)", 0, 7*FONT_HEIGHT)
+    love.graphics.print("Track: " .. chordica.currentTrack .. " [".. chordica.instrument[chordica.currentTrack][1] .. "] (F4 to change)", 0, 8*FONT_HEIGHT)
 
 
     -- draw last to be top layer
     drawSSS()
     drawHorizonalKeyboard()
+
+    love.graphics.setFont(monoFont)
+    love.graphics.setColor(color.white)
+    love.graphics.print(piano73Keys,0,14*FONT_HEIGHT)
+
+    -- draw loading message if front-loading audio
+    if textUI.audioLoading < 108 then
+      love.graphics.setFont(monoFont)
+      love.graphics.setColor(color.brightyellow)
+      love.graphics.print("Instruments loading...",27*FONT_WIDTH,12*FONT_HEIGHT)
+      love.graphics.setColor(0,0,0,0.75)
+      love.graphics.rectangle("fill",(textUI.audioLoading-28)*FONT_WIDTH,13*FONT_HEIGHT,(80-(textUI.audioLoading-28))*FONT_WIDTH,4*FONT_HEIGHT)
+    end
+
 
   end
 
@@ -1403,6 +1469,28 @@ end
 
 function love.update(dt)
   -- Your game update here
+
+  -- initial audio loading of sources over many frames
+  if textUI.audioLoading < 109 then
+    if textUI.audioLoading >= chordica.instrument[1][2] and textUI.audioLoading <= chordica.instrument[1][3] then
+      trackAudio[1][textUI.audioLoading] = love.audio.newSource("res/".. chordica.instrument[1][1] .."/" .. textUI.audioLoading .. ".ogg", "static")
+      print("loaded 1-"..textUI.audioLoading)
+    end
+    if textUI.audioLoading >= chordica.instrument[2][2] and textUI.audioLoading <= chordica.instrument[2][3] then
+      trackAudio[2][textUI.audioLoading] = love.audio.newSource("res/".. chordica.instrument[2][1] .."/" .. textUI.audioLoading .. ".ogg", "static")
+      print("loaded 2-"..textUI.audioLoading)
+    end
+    if textUI.audioLoading >= chordica.instrument[3][2] and textUI.audioLoading <= chordica.instrument[3][3] then
+      trackAudio[3][textUI.audioLoading] = love.audio.newSource("res/".. chordica.instrument[3][1] .."/" .. textUI.audioLoading .. ".ogg", "static")
+      print("loaded 3-"..textUI.audioLoading)
+    end
+    if textUI.audioLoading >= chordica.instrument[4][2] and textUI.audioLoading <= chordica.instrument[4][3] then
+      trackAudio[4][textUI.audioLoading] = love.audio.newSource("res/".. chordica.instrument[4][1] .."/" .. textUI.audioLoading .. ".ogg", "static")
+      print("loaded 4-"..textUI.audioLoading)
+    end
+
+    textUI.audioLoading = textUI.audioLoading + 1 -- increment for next frame
+  end
 
   -- add to recording queue if recording started
 --  if music.recordingDevice:isRecording() then
@@ -1525,7 +1613,7 @@ end
 function love.keypressed(key, scancode, isrepeat)
 
   -- Inputs for "HorizonalKeyboard" with SSS
-  if game.scene == "HorizonalKeyboard" then
+  if game.scene == "HorizonalKeyboard" and textUI.audioLoading >= 108 then -- after loading is done
     game.inputTips = "" -- init inputTips
 
     -- "escape" to quit app
@@ -1562,214 +1650,219 @@ function love.keypressed(key, scancode, isrepeat)
       end
     end
 
+    -- F4 change track (and instrument)
+    if key == "f4" then
+      chordica.currentTrack = chordica.currentTrack + 1
+      if chordica.currentTrack == 4 then chordica.currentTrack = 1 end -- 1..3 only for now
+    end
 
 
-    -- ZXC row of keys
+    -- ZXC row of keys (vKeyboardNoteLUT[4])
     if key == "z" then
-      if chordica.keyAudio[1]:isPlaying() then
-        chordica.keyAudio[1]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][1]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][1]]:stop()
       end
-      chordica.keyAudio[1]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][1]]:play()
     end
     if key == "x" then
-      if chordica.keyAudio[2]:isPlaying() then
-        chordica.keyAudio[2]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][2]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][2]]:stop()
       end
-      chordica.keyAudio[2]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][2]]:play()
     end
     if key == "c" then
-      if chordica.keyAudio[3]:isPlaying() then
-        chordica.keyAudio[3]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][3]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][3]]:stop()
       end
-      chordica.keyAudio[3]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][3]]:play()
     end
     if key == "v" then
-      if chordica.keyAudio[4]:isPlaying() then
-        chordica.keyAudio[4]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][4]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][4]]:stop()
       end
-      chordica.keyAudio[4]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][4]]:play()
     end
     if key == "b" then
-      if chordica.keyAudio[5]:isPlaying() then
-        chordica.keyAudio[5]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][5]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][5]]:stop()
       end
-      chordica.keyAudio[5]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][5]]:play()
     end
     if key == "n" then
-      if chordica.keyAudio[6]:isPlaying() then
-        chordica.keyAudio[6]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][6]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][6]]:stop()
       end
-      chordica.keyAudio[6]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][6]]:play()
     end
     if key == "m" then
-      if chordica.keyAudio[7]:isPlaying() then
-        chordica.keyAudio[7]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][7]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][7]]:stop()
       end
-      chordica.keyAudio[7]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][7]]:play()
     end
 
-    -- ASD row of keys
+    -- ASD row of keys (vKeyboardNoteLUT[3])
     if key == "a" or key == "," then
-      if chordica.keyAudio[8]:isPlaying() then
-        chordica.keyAudio[8]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][1]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][1]]:stop()
       end
-      chordica.keyAudio[8]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][1]]:play()
     end
     if key == "s" or key == "." then
-      if chordica.keyAudio[9]:isPlaying() then
-        chordica.keyAudio[9]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][2]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][2]]:stop()
       end
-      chordica.keyAudio[9]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][2]]:play()
     end
     if key == "d" or key == "/" then
-      if chordica.keyAudio[10]:isPlaying() then
-        chordica.keyAudio[10]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][3]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][3]]:stop()
       end
-      chordica.keyAudio[10]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][3]]:play()
     end
     if key == "f" then
-      if chordica.keyAudio[11]:isPlaying() then
-        chordica.keyAudio[11]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][4]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][4]]:stop()
       end
-      chordica.keyAudio[11]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][4]]:play()
     end
     if key == "g" then
-      if chordica.keyAudio[12]:isPlaying() then
-        chordica.keyAudio[12]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][5]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][5]]:stop()
       end
-      chordica.keyAudio[12]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][5]]:play()
     end
     if key == "h" then
-      if chordica.keyAudio[13]:isPlaying() then
-        chordica.keyAudio[13]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][6]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][6]]:stop()
       end
-      chordica.keyAudio[13]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][6]]:play()
     end
     if key == "j" then
-      if chordica.keyAudio[14]:isPlaying() then
-        chordica.keyAudio[14]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][7]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][7]]:stop()
       end
-      chordica.keyAudio[14]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][7]]:play()
     end
 
-    -- QWE row of keys
+    -- QWE row of keys (vKeyboardNoteLUT[2])
     if key == "q" or key == "k" then
-      if chordica.keyAudio[15]:isPlaying() then
-        chordica.keyAudio[15]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][1]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][1]]:stop()
       end
-      chordica.keyAudio[15]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][1]]:play()
     end
     if key == "w" or key == "l" then
-      if chordica.keyAudio[16]:isPlaying() then
-        chordica.keyAudio[16]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][2]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][2]]:stop()
       end
-      chordica.keyAudio[16]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][2]]:play()
     end
     if key == "e" or key == ";" then
-      if chordica.keyAudio[17]:isPlaying() then
-        chordica.keyAudio[17]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][3]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][3]]:stop()
       end
-      chordica.keyAudio[17]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][3]]:play()
     end
     if key == "r" or key == "'" then
-      if chordica.keyAudio[18]:isPlaying() then
-        chordica.keyAudio[18]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][4]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][4]]:stop()
       end
-      chordica.keyAudio[18]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][4]]:play()
     end
     if key == "t" then
-      if chordica.keyAudio[19]:isPlaying() then
-        chordica.keyAudio[19]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][5]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][5]]:stop()
       end
-      chordica.keyAudio[19]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][5]]:play()
     end
     if key == "y" then
-      if chordica.keyAudio[20]:isPlaying() then
-        chordica.keyAudio[20]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][6]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][6]]:stop()
       end
-      chordica.keyAudio[20]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][6]]:play()
     end
     if key == "u" then
-      if chordica.keyAudio[21]:isPlaying() then
-        chordica.keyAudio[21]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][7]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][7]]:stop()
       end
-      chordica.keyAudio[21]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][7]]:play()
     end
 
-    -- 123 row of keys
+    -- 123 row of keys (vKeyboardNoteLUT[1])
     if key == "1" or key == "i" then
-      if chordica.keyAudio[22]:isPlaying() then
-        chordica.keyAudio[22]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][1]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][1]]:stop()
       end
-      chordica.keyAudio[22]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][1]]:play()
     end
     if key == "2" or key == "o" then
-      if chordica.keyAudio[23]:isPlaying() then
-        chordica.keyAudio[23]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][2]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][2]]:stop()
       end
-      chordica.keyAudio[23]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][2]]:play()
     end
     if key == "3" or key == "p" then
-      if chordica.keyAudio[24]:isPlaying() then
-        chordica.keyAudio[24]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][3]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][3]]:stop()
       end
-      chordica.keyAudio[24]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][3]]:play()
     end
     if key == "4" or key == "[" then
-      if chordica.keyAudio[25]:isPlaying() then
-        chordica.keyAudio[25]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][4]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][4]]:stop()
       end
-      chordica.keyAudio[25]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][4]]:play()
     end
     if key == "5" or key == "]" then
-      if chordica.keyAudio[26]:isPlaying() then
-        chordica.keyAudio[26]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][5]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][5]]:stop()
       end
-      chordica.keyAudio[26]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][5]]:play()
     end
     if key == "6" or key == "\\" then
-      if chordica.keyAudio[27]:isPlaying() then
-        chordica.keyAudio[27]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][6]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][6]]:stop()
       end
-      chordica.keyAudio[27]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][6]]:play()
     end
     if key == "7" then
-      if chordica.keyAudio[28]:isPlaying() then
-        chordica.keyAudio[28]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][7]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][7]]:stop()
       end
-      chordica.keyAudio[28]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][7]]:play()
     end
 
     -- Extended top 890... row of keys
     if key == "8" then
-      if chordica.keyAudio[29]:isPlaying() then
-        chordica.keyAudio[29]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][8]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][8]]:stop()
       end
-      chordica.keyAudio[29]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][8]]:play()
     end
     if key == "9" then
-      if chordica.keyAudio[30]:isPlaying() then
-        chordica.keyAudio[30]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][9]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][9]]:stop()
       end
-      chordica.keyAudio[30]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][9]]:play()
     end
     if key == "0" then
-      if chordica.keyAudio[31]:isPlaying() then
-        chordica.keyAudio[31]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][10]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][10]]:stop()
       end
-      chordica.keyAudio[31]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][10]]:play()
     end
     if key == "-" then
-      if chordica.keyAudio[32]:isPlaying() then
-        chordica.keyAudio[32]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][11]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][11]]:stop()
       end
-      chordica.keyAudio[32]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][11]]:play()
     end
     if key == "=" then
-      if chordica.keyAudio[33]:isPlaying() then
-        chordica.keyAudio[33]:stop()
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][12]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][12]]:stop()
       end
-      chordica.keyAudio[33]:play()
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][12]]:play()
     end
 
 
@@ -1888,109 +1981,61 @@ function love.keypressed(key, scancode, isrepeat)
     -- "Up" to play piano note 28
     game.inputTips = game.inputTips .. "Up : Play note - C\n"
     if key == "up" then
-      if piano[28]:isPlaying() then
-        piano[28]:stop()
-      end
-      piano[28]:play()
       keyFinder.keys['c'] = 1
     end
     -- "Left" to play piano note 29
     game.inputTips = game.inputTips .. "Left : Play note - C#\n"
     if key == "left" then
-      if piano[29]:isPlaying() then
-        piano[29]:stop()
-      end
-      piano[29]:play()
       keyFinder.keys['c+'] = 1
     end
     -- "Down" to play piano note 30
     game.inputTips = game.inputTips .. "Down : Play note - D\n"
     if key == "down" then
-      if piano[30]:isPlaying() then
-        piano[30]:stop()
-      end
-      piano[30]:play()
       keyFinder.keys['d'] = 1
     end
     -- "Right" to play piano note 31
     game.inputTips = game.inputTips .. "Right : Play note - D#\n"
     if key == "right" then
-      if piano[31]:isPlaying() then
-        piano[31]:stop()
-      end
-      piano[31]:play()
       keyFinder.keys['d+'] = 1
     end
     -- "T" to play piano note 32
     game.inputTips = game.inputTips .. "T : Play note - E\n"
     if key == "t" then
-      if piano[32]:isPlaying() then
-        piano[32]:stop()
-      end
-      piano[32]:play()
       keyFinder.keys['e'] = 1
     end
     -- "F" to play piano note 33
     game.inputTips = game.inputTips .. "F : Play note - F\n"
     if key == "f" then
-      if piano[33]:isPlaying() then
-        piano[33]:stop()
-      end
-      piano[33]:play()
       keyFinder.keys['f'] = 1
     end
     -- "G" to play piano note 34
     game.inputTips = game.inputTips .. "G : Play note - F#\n"
     if key == "g" then
-      if piano[34]:isPlaying() then
-        piano[34]:stop()
-      end
-      piano[34]:play()
       keyFinder.keys['f+'] = 1
     end
     -- "H" to play piano note 35
     game.inputTips = game.inputTips .. "H : Play note - G\n"
     if key == "h" then
-      if piano[35]:isPlaying() then
-        piano[35]:stop()
-      end
-      piano[35]:play()
       keyFinder.keys['g'] = 1
     end
     -- "I" to play piano note 36
     game.inputTips = game.inputTips .. "I : Play note - G#\n"
     if key == "i" then
-      if piano[36]:isPlaying() then
-        piano[36]:stop()
-      end
-      piano[36]:play()
       keyFinder.keys['g+'] = 1
     end
     -- "J" to play piano note 37
     game.inputTips = game.inputTips .. "J : Play note - A\n"
     if key == "j" then
-      if piano[37]:isPlaying() then
-        piano[37]:stop()
-      end
-      piano[37]:play()
       keyFinder.keys['a'] = 1
     end
     -- "K" to play piano note 38
     game.inputTips = game.inputTips .. "K : Play note - A#\n"
     if key == "k" then
-      if piano[38]:isPlaying() then
-        piano[38]:stop()
-      end
-      piano[38]:play()
       keyFinder.keys['a+'] = 1
     end
     -- "L" to play piano note 39
     game.inputTips = game.inputTips .. "L : Play note - B\n"
     if key == "l" then
-      if piano[39]:isPlaying() then
-        piano[39]:stop()
-      end
-      piano[39]:play()
       keyFinder.keys['b'] = 1
     end
 
