@@ -226,6 +226,14 @@ local scancodeToNoteLUT = {
   ["m"] = {4,7}, [","] = {3,1}, ["."] = {3,2}, ["/"] = {3,3} ,
 }
 
+-- alpha values for keyboard highlighting
+local keyLight = {
+  [1] = {0,0,0,0,0,0,0,0,0,0,0,0}, -- 12 keys
+  [2] = {0,0,0,0,0,0,0,0,0,0,0,0}, -- 12 keys
+  [3] = {0,0,0,0,0,0,0,0,0,0,0}, -- 11 keys
+  [4] = {0,0,0,0,0,0,0,0,0,0}, -- 10 keys
+}
+
 
 -- first item is the menu category, the rest are the category's options
 local menuTable = {
@@ -1087,6 +1095,43 @@ function drawKeyboardKeypressed(bgcolor, x, y)
   love.graphics.print("▐███▌\n▐███▌\n▐███▌\n▐███▌\n", (x-1)*FONT2X_WIDTH, y*FONT2X_HEIGHT)
 end
 
+function drawRecordedKeyLights()
+  love.graphics.setFont(monoFont2x)
+  -- 1st row
+  -- 1st row, 7 = color, x starts at 1, inc by 4, y = 35
+  for i = 1,12 do -- 12 keys
+      love.graphics.setColor(color[7][1],color[7][2],color[7][3],keyLight[1][i])
+      love.graphics.print("▐███▌\n▐███▌\n▐███▌\n▐███▌\n", (0+((i-1)*4))*FONT2X_WIDTH, 35*FONT2X_HEIGHT)
+      keyLight[1][i] = keyLight[1][i] - 0.01 -- fade the keylights
+      if keyLight[1][i] < 0 then keyLight[1][i] = 0 end -- floor at 0
+  end
+  -- 2nd row
+  -- 2nd row, 7 = color, x starts at 2, inc by 4, y = 39
+  for i = 1,12 do -- 12 keys
+      love.graphics.setColor(color[7][1],color[7][2],color[7][3],keyLight[2][i])
+      love.graphics.print("▐███▌\n▐███▌\n▐███▌\n▐███▌\n", (1+((i-1)*4))*FONT2X_WIDTH, 39*FONT2X_HEIGHT)
+      keyLight[2][i] = keyLight[2][i] - 0.01 -- fade the keylights
+      if keyLight[2][i] < 0 then keyLight[2][i] = 0 end -- floor at 0
+  end
+  -- 3rd row
+  -- 3rd row, 7 = color, x starts at 3, inc by 4, y = 43
+  for i = 1,11 do -- 11 keys
+      love.graphics.setColor(color[7][1],color[7][2],color[7][3],keyLight[3][i])
+      love.graphics.print("▐███▌\n▐███▌\n▐███▌\n▐███▌\n", (2+((i-1)*4))*FONT2X_WIDTH, 43*FONT2X_HEIGHT)
+      keyLight[3][i] = keyLight[3][i] - 0.01 -- fade the keylights
+      if keyLight[3][i] < 0 then keyLight[3][i] = 0 end -- floor at 0
+  end
+  -- 4th row
+  -- 4th row, 7 = color, x starts at 4, inc by 4, y = 47
+  for i = 1,10 do -- 10 keys
+      love.graphics.setColor(color[7][1],color[7][2],color[7][3],keyLight[4][i])
+      love.graphics.print("▐███▌\n▐███▌\n▐███▌\n▐███▌\n", (3+((i-1)*4))*FONT2X_WIDTH, 47*FONT2X_HEIGHT)
+      keyLight[4][i] = keyLight[4][i] - 0.01 -- fade the keylights
+      if keyLight[4][i] < 0 then keyLight[4][i] = 0 end -- floor at 0
+  end
+end
+
+
 function drawSSS()
   love.graphics.setFont(monoFont)
   love.graphics.setColor(color.white)
@@ -1310,6 +1355,7 @@ function love.draw()
     end
 
     -- keys are pressed (show highlight)
+    -- 4th row, 7 = color, x starts at 4, inc by 4, y = 47
     if love.keyboard.isDown("z") then
       drawKeyboardKeypressed(7, 4, 47)
     end
@@ -1340,6 +1386,8 @@ function love.draw()
     if love.keyboard.isDown("/") then
       drawKeyboardKeypressed(7, 4+36, 47)
     end
+
+    -- 3rd row, 7 = color, x starts at 3, inc by 4, y = 43
     if love.keyboard.isDown("a") then
       drawKeyboardKeypressed(7, 3, 43)
     end
@@ -1373,6 +1421,8 @@ function love.draw()
     if love.keyboard.isDown("'") then
       drawKeyboardKeypressed(7, 3+40, 43)
     end
+
+    -- 2nd row, 7 = color, x starts at 2, inc by 4, y = 39
     if love.keyboard.isDown("q") then
       drawKeyboardKeypressed(7, 2, 39)
     end
@@ -1409,6 +1459,8 @@ function love.draw()
     if love.keyboard.isDown("]") then
       drawKeyboardKeypressed(7, 2+44, 39)
     end
+
+    -- 1st row, 7 = color, x starts at 1, inc by 4, y = 35
     if love.keyboard.isDown("1") then
       drawKeyboardKeypressed(7, 1, 35)
     end
@@ -1458,6 +1510,7 @@ function love.draw()
 
     -- draw last to be top layer
     drawSSS()
+    drawRecordedKeyLights() -- draw this first before the keyboard over it
     drawHorizonalKeyboard()
 
     love.graphics.setFont(monoFont)
@@ -1503,10 +1556,21 @@ function love.update(dt)
 
     if chordica.recordingTime >= chordica.recordingData[chordica.currentTrack][chordica.nextNote]["time"] then
       print("play recorded note - " .. chordica.recordingData[chordica.currentTrack][chordica.nextNote]["key"] .. " " .. chordica.recordingTime)
+
+    if scancodeToNoteLUT[chordica.recordingData[chordica.currentTrack][chordica.nextNote]["key"]] ~= nil then
+      print("valid note for playback - " .. chordica.recordingData[chordica.currentTrack][chordica.nextNote]["key"])
+      if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[scancodeToNoteLUT[chordica.recordingData[chordica.currentTrack][chordica.nextNote]["key"]][1]][scancodeToNoteLUT[chordica.recordingData[chordica.currentTrack][chordica.nextNote]["key"]][2]]]:isPlaying() then
+        trackAudio[chordica.currentTrack][vKeyboardNoteLUT[scancodeToNoteLUT[chordica.recordingData[chordica.currentTrack][chordica.nextNote]["key"]][1]][scancodeToNoteLUT[chordica.recordingData[chordica.currentTrack][chordica.nextNote]["key"]][2]]]:stop()
+      end
+      trackAudio[chordica.currentTrack][vKeyboardNoteLUT[scancodeToNoteLUT[chordica.recordingData[chordica.currentTrack][chordica.nextNote]["key"]][1]][scancodeToNoteLUT[chordica.recordingData[chordica.currentTrack][chordica.nextNote]["key"]][2]]]:play()
+      keyLight[scancodeToNoteLUT[chordica.recordingData[chordica.currentTrack][chordica.nextNote]["key"]][1]][scancodeToNoteLUT[chordica.recordingData[chordica.currentTrack][chordica.nextNote]["key"]][2]] = 1 -- alpha to 1 to make it light up
+    end
+
+
       chordica.nextNote = chordica.nextNote + 1
-      if chordica.nextNote > #chordica.recordingData then
+      if chordica.nextNote > #chordica.recordingData[chordica.currentTrack] then
         chordica.isPlaying = false
-        print("autostopped playback")
+        print("autostopped playback - " .. chordica.nextNote .. "/" .. #chordica.recordingData[chordica.currentTrack])
       end
     end
   end
@@ -1703,11 +1767,13 @@ function love.keypressed(key, scancode, isrepeat)
         chordica.isRecording = false
         chordica.recordingTime = 0
         for i = 1,#chordica.recordingData[chordica.currentTrack] do
+
           for key2,value2 in pairs(chordica.recordingData[chordica.currentTrack][i]) do
             if key2 == "time" then print ("hey") end
             print(key2,value2)
           end
         end
+        print("recorded data = " .. #chordica.recordingData[chordica.currentTrack])
       else
         chordica.recordingTime = 0
         chordica.isRecording = true
