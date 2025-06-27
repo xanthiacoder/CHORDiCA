@@ -1617,19 +1617,19 @@ function love.keypressed(key, scancode, isrepeat)
     game.inputTips = "" -- init inputTips
 
     -- "escape" to quit app
-    if key == "escape" then
+    if scancode == "escape" then
       love.event.quit()
     end
 
     -- F1 to change modes (1..7)
-    if key == "f1" then
+    if scancode == "f1" then
       chordica.mode = chordica.mode + 1
       if chordica.mode == 8 then chordica.mode = 1 end
       loadInstrument("piano",chordica.mode)
     end
 
     -- F2 to transpose UP
-    if key == "f2" then
+    if scancode == "f2" then
       print(chordica.note[1]+chordica.transpose)
       if chordica.note[1]+chordica.transpose < 52 then -- highest for 4 1/2 octaves
         chordica.transpose = chordica.transpose + 1
@@ -1640,7 +1640,7 @@ function love.keypressed(key, scancode, isrepeat)
     end
 
     -- F3 to transpose DOWN
-    if key == "f3" then
+    if scancode == "f3" then
       print(chordica.note[1]+chordica.transpose)
       if chordica.note[1]+chordica.transpose > 21 then -- lowest for 4 1/2 octaves
         chordica.transpose = chordica.transpose - 1
@@ -1651,50 +1651,50 @@ function love.keypressed(key, scancode, isrepeat)
     end
 
     -- F4 change track (and instrument)
-    if key == "f4" then
+    if scancode == "f4" then
       chordica.currentTrack = chordica.currentTrack + 1
       if chordica.currentTrack == 4 then chordica.currentTrack = 1 end -- 1..3 only for now
     end
 
 
     -- ZXC row of keys (vKeyboardNoteLUT[4])
-    if key == "z" then
+    if scancode == "z" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][1]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][1]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][1]]:play()
     end
-    if key == "x" then
+    if scancode == "x" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][2]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][2]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][2]]:play()
     end
-    if key == "c" then
+    if scancode == "c" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][3]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][3]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][3]]:play()
     end
-    if key == "v" then
+    if scancode == "v" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][4]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][4]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][4]]:play()
     end
-    if key == "b" then
+    if scancode == "b" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][5]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][5]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][5]]:play()
     end
-    if key == "n" then
+    if scancode == "n" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][6]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][6]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][6]]:play()
     end
-    if key == "m" then
+    if scancode == "m" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][7]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[4][7]]:stop()
       end
@@ -1702,43 +1702,43 @@ function love.keypressed(key, scancode, isrepeat)
     end
 
     -- ASD row of keys (vKeyboardNoteLUT[3])
-    if key == "a" or key == "," then
+    if scancode == "a" or scancode == "," then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][1]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][1]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][1]]:play()
     end
-    if key == "s" or key == "." then
+    if scancode == "s" or scancode == "." then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][2]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][2]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][2]]:play()
     end
-    if key == "d" or key == "/" then
+    if scancode == "d" or scancode == "/" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][3]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][3]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][3]]:play()
     end
-    if key == "f" then
+    if scancode == "f" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][4]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][4]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][4]]:play()
     end
-    if key == "g" then
+    if scancode == "g" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][5]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][5]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][5]]:play()
     end
-    if key == "h" then
+    if scancode == "h" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][6]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][6]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][6]]:play()
     end
-    if key == "j" then
+    if scancode == "j" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][7]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[3][7]]:stop()
       end
@@ -1746,43 +1746,43 @@ function love.keypressed(key, scancode, isrepeat)
     end
 
     -- QWE row of keys (vKeyboardNoteLUT[2])
-    if key == "q" or key == "k" then
+    if scancode == "q" or scancode == "k" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][1]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][1]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][1]]:play()
     end
-    if key == "w" or key == "l" then
+    if scancode == "w" or scancode == "l" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][2]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][2]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][2]]:play()
     end
-    if key == "e" or key == ";" then
+    if scancode == "e" or scancode == ";" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][3]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][3]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][3]]:play()
     end
-    if key == "r" or key == "'" then
+    if scancode == "r" or scancode == "'" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][4]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][4]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][4]]:play()
     end
-    if key == "t" then
+    if scancode == "t" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][5]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][5]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][5]]:play()
     end
-    if key == "y" then
+    if scancode == "y" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][6]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][6]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][6]]:play()
     end
-    if key == "u" then
+    if scancode == "u" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][7]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[2][7]]:stop()
       end
@@ -1790,43 +1790,43 @@ function love.keypressed(key, scancode, isrepeat)
     end
 
     -- 123 row of keys (vKeyboardNoteLUT[1])
-    if key == "1" or key == "i" then
+    if scancode == "1" or scancode == "i" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][1]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][1]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][1]]:play()
     end
-    if key == "2" or key == "o" then
+    if scancode == "2" or scancode == "o" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][2]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][2]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][2]]:play()
     end
-    if key == "3" or key == "p" then
+    if scancode == "3" or scancode == "p" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][3]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][3]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][3]]:play()
     end
-    if key == "4" or key == "[" then
+    if scancode == "4" or scancode == "[" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][4]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][4]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][4]]:play()
     end
-    if key == "5" or key == "]" then
+    if scancode == "5" or scancode == "]" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][5]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][5]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][5]]:play()
     end
-    if key == "6" or key == "\\" then
+    if scancode == "6" or scancode == "\\" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][6]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][6]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][6]]:play()
     end
-    if key == "7" then
+    if scancode == "7" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][7]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][7]]:stop()
       end
@@ -1834,31 +1834,31 @@ function love.keypressed(key, scancode, isrepeat)
     end
 
     -- Extended top 890... row of keys
-    if key == "8" then
+    if scancode == "8" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][8]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][8]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][8]]:play()
     end
-    if key == "9" then
+    if scancode == "9" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][9]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][9]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][9]]:play()
     end
-    if key == "0" then
+    if scancode == "0" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][10]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][10]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][10]]:play()
     end
-    if key == "-" then
+    if scancode == "-" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][11]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][11]]:stop()
       end
       trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][11]]:play()
     end
-    if key == "=" then
+    if scancode == "=" then
       if trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][12]]:isPlaying() then
         trackAudio[chordica.currentTrack][vKeyboardNoteLUT[1][12]]:stop()
       end
